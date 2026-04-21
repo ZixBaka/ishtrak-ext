@@ -136,6 +136,21 @@ async function processCommand(req: CommandRequest): Promise<CommandResponse> {
         return { uuid: req.uuid, data: task };
       }
 
+      case "GET_ACTIVE_HOST": {
+        try {
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          if (tab?.windowId != null) {
+            const activeHost = await getWindowActiveBridge(tab.windowId);
+            if (activeHost) return { uuid: req.uuid, data: { host: activeHost } };
+          }
+        } catch {}
+        // No per-window active bridge — fall back to the only configured bridge.
+        const configs = await listBridgeConfigs();
+        if (configs.length === 1) return { uuid: req.uuid, data: { host: configs[0].host } };
+        if (configs.length > 1) return { uuid: req.uuid, error: "Multiple bridges configured — use --host to specify one" };
+        return { uuid: req.uuid, error: "No bridge configured in the extension" };
+      }
+
       case "LIST_PROFILES": {
         const configs = await listBridgeConfigs();
         return { uuid: req.uuid, data: configs };
