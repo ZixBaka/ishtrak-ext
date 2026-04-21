@@ -340,7 +340,7 @@ function BridgeCard({
             {isActive && <span style={styles.activeBadge}>Active</span>}
           </div>
           <div style={{ fontSize: 11, color: "#2d9f6e", marginTop: 2 }}>
-            {config.displayName ?? config.platformType} · {STRATEGY_SHORT_LABELS[config.strategy] ?? config.strategy}
+            {config.displayName ?? config.platformType} · {STRATEGY_SHORT_LABELS[config.strategy]}
           </div>
           {config.projectId && (
             <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>Project: {config.projectId}</div>
