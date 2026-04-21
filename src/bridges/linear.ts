@@ -9,6 +9,18 @@ export class LinearBridge implements PlatformBridge {
   readonly supportedStrategies: Strategy[] = ["API_DIRECT_TOKEN"];
 
   async createTask(payload: CreateTaskPayload, config: BridgeConfig): Promise<TaskResult> {
+    const input: Record<string, unknown> = {
+      title: payload.title,
+      description: payload.description,
+      teamId: config.projectId ?? payload.projectId,
+    };
+
+    if (payload.parentId) {
+      // Linear requires the UUID for parentId — look it up by human-readable identifier.
+      const parentUuid = await this.resolveIssueUuid(payload.parentId, config.token ?? "");
+      input.parentId = parentUuid;
+    }
+
     const resp = await fetch(LINEAR_API, {
       method: "POST",
       headers: {
@@ -22,13 +34,7 @@ export class LinearBridge implements PlatformBridge {
             issue { id identifier url }
           }
         }`,
-        variables: {
-          input: {
-            title: payload.title,
-            description: payload.description,
-            teamId: config.projectId ?? payload.projectId,
-          },
-        },
+        variables: { input },
       }),
       credentials: "omit",
     });
@@ -42,6 +48,24 @@ export class LinearBridge implements PlatformBridge {
     const issue = data?.data?.issueCreate?.issue;
     if (!issue) throw new Error("Linear: no issue returned in response");
     return { taskId: issue.identifier, taskUrl: issue.url };
+  }
+
+  private async resolveIssueUuid(identifier: string, token: string): Promise<string> {
+    const resp = await fetch(LINEAR_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": token },
+      body: JSON.stringify({
+        query: `query IssueById($id: String!) { issue(id: $id) { id } }`,
+        variables: { id: identifier },
+      }),
+      credentials: "omit",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) throw new Error(`Linear: failed to resolve parent issue "${identifier}"`);
+    const data = await resp.json();
+    const uuid = data?.data?.issue?.id;
+    if (!uuid) throw new Error(`Linear: parent issue "${identifier}" not found`);
+    return uuid;
   }
 
   async listTasks(_config: BridgeConfig, _filter: ListTasksFilter): Promise<Task[]> {

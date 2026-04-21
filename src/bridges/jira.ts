@@ -61,9 +61,10 @@ export class JiraBridge implements PlatformBridge {
     const body = {
       fields: {
         project: { key: config.projectId ?? payload.projectId },
-        issuetype: { name: "Task" },
+        issuetype: { name: payload.parentId ? "Subtask" : "Task" },
         summary: payload.title,
         ...(payload.description ? { description: payload.description } : {}),
+        ...(payload.parentId ? { parent: { key: payload.parentId } } : {}),
       },
     };
 

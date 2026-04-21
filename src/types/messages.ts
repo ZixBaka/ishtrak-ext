@@ -9,6 +9,7 @@ export interface CreateTaskPayload {
   storyId?: string;
   projectId?: string;
   token?: string;
+  parentId?: string;
 }
 
 export interface ListTasksPayload {
