@@ -157,19 +157,20 @@ async function processCommand(req: CommandRequest): Promise<CommandResponse> {
 // ── Active bridge resolution ──────────────────────────────────────────────────
 
 async function resolveActiveConfig(fallbackHost: string) {
+  const fallbackPromise = getBridgeConfig(fallbackHost);
   try {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (tab?.windowId != null) {
-      const host = await getWindowActiveBridge(tab.windowId);
-      if (host) {
-        const config = await getBridgeConfig(host);
+      const activeHost = await getWindowActiveBridge(tab.windowId);
+      if (activeHost) {
+        const config = await getBridgeConfig(activeHost);
         if (config) return config;
       }
     }
   } catch {
     // tabs API unavailable — fall through
   }
-  return getBridgeConfig(fallbackHost);
+  return fallbackPromise;
 }
 
 // ── Internal messages (popup ↔ background) ────────────────────────────────────

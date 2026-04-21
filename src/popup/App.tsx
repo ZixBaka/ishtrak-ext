@@ -21,6 +21,22 @@ const EMPTY_WIZARD: WizardState = {
   projectId: "",
 };
 
+const STRATEGY_LABELS: Record<Strategy, string> = {
+  API_DIRECT_SESSION: "Browser session (no token)",
+  API_DIRECT_TOKEN: "API token / Personal Access Token",
+  FORM_FILL: "Form fill (DOM automation)",
+};
+
+const STRATEGY_SHORT_LABELS: Record<Strategy, string> = {
+  API_DIRECT_SESSION: "session",
+  API_DIRECT_TOKEN: "token",
+  FORM_FILL: "form fill",
+};
+
+function normalizeHost(raw: string): string {
+  return raw.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
 export default function App() {
   const [bridges, setBridges] = useState<BridgeConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +74,7 @@ export default function App() {
     if (!bridge) return;
 
     const config: BridgeConfig = {
-      host: wizard.host.trim().replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      host: normalizeHost(wizard.host),
       platformType: wizard.platform,
       strategy: wizard.strategy,
       token: wizard.token.trim() || undefined,
@@ -79,7 +95,7 @@ export default function App() {
     if (!bridge) return;
 
     const config: BridgeConfig = {
-      host: wizard.host.trim().replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      host: normalizeHost(wizard.host),
       platformType: wizard.platform,
       strategy: wizard.strategy,
       token: wizard.token.trim() || undefined,
@@ -193,11 +209,6 @@ export default function App() {
   // ── Step 2: pick strategy (only shown when >1 options) ──
   if (step === "pick-strategy") {
     const bridge = getBridge(wizard.platform)!;
-    const strategyLabels: Record<Strategy, string> = {
-      API_DIRECT_SESSION: "Browser session (no token)",
-      API_DIRECT_TOKEN: "API token / Personal Access Token",
-      FORM_FILL: "Form fill (DOM automation)",
-    };
     return (
       <Shell daemonStatus={daemonStatus}>
         <h3 style={styles.stepTitle}>Authentication strategy</h3>
@@ -208,7 +219,7 @@ export default function App() {
               style={wizard.strategy === s ? styles.platformBtnSelected : styles.platformBtn}
               onClick={() => setWizard((w) => ({ ...w, strategy: s }))}
             >
-              {strategyLabels[s]}
+              {STRATEGY_LABELS[s]}
             </button>
           ))}
         </div>
@@ -320,12 +331,6 @@ function BridgeCard({
     }
   }
 
-  const strategyLabel: Record<string, string> = {
-    API_DIRECT_SESSION: "session",
-    API_DIRECT_TOKEN: "token",
-    FORM_FILL: "form fill",
-  };
-
   return (
     <div style={{ ...styles.card, borderColor: isActive ? "#1a73e8" : "#e0e0e0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -335,7 +340,7 @@ function BridgeCard({
             {isActive && <span style={styles.activeBadge}>Active</span>}
           </div>
           <div style={{ fontSize: 11, color: "#2d9f6e", marginTop: 2 }}>
-            {config.displayName ?? config.platformType} · {strategyLabel[config.strategy] ?? config.strategy}
+            {config.displayName ?? config.platformType} · {STRATEGY_SHORT_LABELS[config.strategy] ?? config.strategy}
           </div>
           {config.projectId && (
             <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>Project: {config.projectId}</div>
@@ -523,7 +528,7 @@ const styles = {
     fontSize: 13,
     cursor: "pointer",
     textAlign: "left" as const,
-    color: "#1a73e8",
+    color: "#1a73e8" as const,
     fontWeight: 600,
   } as React.CSSProperties,
   removeBtn: {
